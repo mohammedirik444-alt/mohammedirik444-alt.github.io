@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>exauxit — operator dossier</title>
+<style>
+  :root{
+    --bg:#0a0906; --ink:#e8dfc8; --dim:#8a8064; --acc:#ffb000; --acc-dim:#7a5c10;
+    --line:#2a2517; --sel:#ffb000; --mono:Consolas,'Cascadia Code','JetBrains Mono','IBM Plex Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  #net{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55}
+  header,.wrap{position:relative;z-index:1}
+  body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:15px;line-height:1.7;
+    text-shadow:0 0 6px rgba(255,176,0,.12)}
+  ::selection{background:var(--acc);color:#0a0906;text-shadow:none}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
+  a{color:var(--acc)}
+  .wrap{max-width:880px;margin:0 auto;padding:0 1.2rem}
+
+  /* status bar */
+  .statusbar{border-bottom:1px solid var(--line);font-size:12px;color:var(--dim);
+    padding:.45rem 0;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+  .statusbar b{color:var(--acc);font-weight:400}
+  .statusbar nav a{color:var(--dim);text-decoration:none;margin-left:1.1rem}
+  .statusbar nav a:hover{color:var(--acc);background:rgba(255,176,0,.08)}
+  .statusbar nav a::before{content:'./'}
+
+  /* boot block */
+  #boot{padding:2.2rem 0 .6rem;min-height:210px;font-size:13.5px}
+  #boot .ln{white-space:pre-wrap;word-break:break-all}
+  #boot .ok{color:var(--acc)} #boot .dim{color:var(--dim)} #boot .bad{color:#ff5f56}
+  .cursor{display:inline-block;width:.6em;height:1.15em;background:var(--acc);vertical-align:text-bottom;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  pre.banner{font-size:clamp(5px,1.55vw,11px);line-height:1.15;color:var(--acc);margin:1.2rem 0 .6rem;white-space:pre}
+  .mission{font-size:clamp(1rem,2.6vw,1.35rem);color:var(--ink);margin:.4rem 0 2rem;max-width:640px}
+  .mission .cm{color:var(--dim)}
+
+  hr.rule{border:0;border-top:1px solid var(--line);margin:2.6rem 0}
+  .hd{font-size:13px;color:var(--dim);letter-spacing:2px;margin-bottom:1.2rem}
+  .hd b{color:var(--acc);font-weight:400}
+  .hd::after{content:' ─────────────────────────────────────────';color:var(--acc-dim)}
+
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:.5rem}
+  th{text-align:left;color:var(--dim);font-weight:400;font-size:12px;letter-spacing:1.5px;
+    border-bottom:1px solid var(--line);padding:.4rem .6rem}
+  td{padding:.55rem .6rem;border-bottom:1px dashed #1c1810;vertical-align:top}
+  tr[data]:hover td{background:rgba(255,176,0,.06);color:#fff}
+  td.id{color:var(--acc);white-space:nowrap}
+  td .tools{color:var(--dim);font-size:12.5px;display:block;margin-top:.15rem}
+
+  .ls{font-size:13.5px}
+  .ls div{padding:.18rem .4rem;white-space:pre-wrap}
+  .ls div:hover{background:rgba(255,176,0,.06)}
+  .ls .sz{color:var(--dim)} .ls .dt{color:var(--dim)} .ls .fn{color:var(--acc)}
+  .ls .ds{color:var(--dim);font-size:12.5px}
+
+  ol.ops{list-style:none;margin:0}
+  ol.ops li{padding:.7rem .2rem .7rem 3.2rem;position:relative;border-bottom:1px dashed #1c1810;font-size:14px}
+  ol.ops li::before{content:attr(data-n);position:absolute;left:.2rem;top:.7rem;color:var(--acc);
+    border:1px solid var(--acc-dim);padding:0 .45rem;font-size:12px}
+  ol.ops p{color:var(--dim);font-size:13px;margin-top:.15rem}
+
+  pre.dump{font-size:12.5px;line-height:1.7;color:var(--dim);border:1px solid var(--line);
+    padding:1rem 1.2rem;overflow-x:auto;margin-bottom:1rem}
+  pre.dump .a{color:var(--acc-dim)} pre.dump .h{color:var(--ink)} pre.dump .hl{color:#0a0906;background:var(--acc);padding:0 .2em}
+
+  #shell{border:1px solid var(--line);margin-bottom:1rem}
+  #shell-out{padding:1rem 1.2rem;min-height:120px;max-height:300px;overflow-y:auto;font-size:13.5px}
+  #shell-out div{margin:.15rem 0;white-space:pre-wrap;word-break:break-all}
+  #shell-in-row{display:flex;border-top:1px solid var(--line);padding:.6rem 1.2rem;align-items:center;gap:.6rem}
+  #shell-in-row span{color:var(--acc)}
+  #shell-in{background:transparent;border:0;outline:0;color:var(--ink);font-family:var(--mono);
+    font-size:14px;flex:1;caret-color:var(--acc)}
+
+  footer{border-top:1px solid var(--line);margin-top:2.5rem;padding:1.4rem 0 3rem;
+    font-size:12px;color:var(--dim);display:flex;justify-content:space-between;flex-wrap:wrap;gap:.6rem}
+</style>
+</head>
+<body>
+<canvas id="net"></canvas>
+<div class="wrap">
+
+  <div class="statusbar">
+    <div>exauxit@operator <b>~</b> dossier v3.1 <b>●</b> <span id="clock">--:--:--</span></div>
+    <nav><a href="#cap">capabilities</a><a href="#ars">arsenal</a><a href="#mth">method</a><a href="#hex">hex</a><a href="#sh">contact</a></nav>
+  </div>
+
+  <div id="boot" aria-label="boot log"></div>
+
+<pre class="banner">███████╗██╗  ██╗ █████╗ ██╗   ██╗██╗  ██╗██╗████████╗
+██╔════╝╚██╗██╔╝██╔══██╗██║   ██║╚██╗██╔╝██║╚══██╔══╝
+█████╗   ╚███╔╝ ███████║██║   ██║ ╚███╔╝ ██║   ██║
+██╔══╝   ██╔██╗ ██╔══██║██║   ██║ ██╔██╗ ██║   ██║
+███████╗██╔╝ ██╗██║  ██║╚██████╔╝██╔╝ ██╗██║   ██║
+╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝   ╚═╝</pre>
+  <p class="mission">Low-level operator. Kernel drivers, anti-cheat internals, HWID identity layers, hypervisor assessment. <span class="cm">If it lives below the API, it's in scope.</span></p>
+
+  <hr class="rule">
+  <div id="cap">
+    <div class="hd"><b>[ 01 ]</b> CAPABILITY MATRIX</div>
+    <table>
+      <tr><th>ID</th><th>DOMAIN</th><th>DEPTH</th></tr>
+      <tr data><td class="id">K-01</td><td>Kernel driver development<span class="tools">manual map · cave injection · SSDT gating · COW hooks · EAT hooks · PFN/PTE work · verified teardown</span></td><td>C++ / WDK / WinDbg</td></tr>
+      <tr data><td class="id">K-02</td><td>Anti-cheat internals<span class="tools">EAC · BattlEye · Vanguard · ShieldGuard — hash targets, enumeration surfaces, HWID paths</span></td><td>research / forensics</td></tr>
+      <tr data><td class="id">K-03</td><td>HWID identity layers<span class="tools">SMBIOS · UEFI vars · USBSTOR · NVMe identify · deterministic seeded serials</span></td><td>memory / flash / registry</td></tr>
+      <tr data><td class="id">K-04</td><td>Reverse engineering<span class="tools">packed binaries · AOB hunting · bone-function emulation · per-build offset derivation</span></td><td>static → dynamic</td></tr>
+      <tr data><td class="id">K-05</td><td>Hypervisor assessment<span class="tools">type-1 UEFI (AMD SVM) · late-launch drivers · EPT/NPT hiding · AC-visibility analysis</span></td><td>Rust + C++</td></tr>
+      <tr data><td class="id">K-06</td><td>Isolated test labs<span class="tools">unattended builds · offline image surgery · snapshots · guest command loops · result pipes</span></td><td>VirtualBox / DISM</td></tr>
+    </table>
+  </div>
+
+  <hr class="rule">
+  <div id="ars">
+    <div class="hd"><b>[ 02 ]</b> ARSENAL — $ ls -la ~/tools</div>
+    <div class="ls">
+      <div><span class="sz">-rwxr-xr-x  68K</span> <span class="fn">sorana-spoofer.sys</span>  <span class="ds">— cave-mapped spoofer, SMBIOS/UEFI/USBSTOR, PiDDB scrubbed</span></div>
+      <div><span class="sz">-rwxr-xr-x 174K</span> <span class="fn">mapper.exe</span>         <span class="ds">— self-sufficient loader, SSDT gate, one-map-per-boot guard</span></div>
+      <div><span class="sz">-rwxr-xr-x  12K</span> <span class="fn">astrum-bridge</span>      <span class="ds">— HAL-hook channel, no device/thread/handles, CR3 physical RW</span></div>
+      <div><span class="sz">drwxr-xr-x   - </span> <span class="fn">r6-tooling/</span>        <span class="ds">— live pattern scanner, per-build AOBs, pulse-patch flow</span></div>
+      <div><span class="sz">drwxr-xr-x   - </span> <span class="fn">forensics-kit/</span>     <span class="ds">— kd automation, trap frames, PTE self-map decode</span></div>
+      <div><span class="dt">total 5 objects · 0 residue ·Verified teardown on all targets</span></div>
+    </div>
+  </div>
+
+  <hr class="rule">
+  <div id="mth">
+    <div class="hd"><b>[ 03 ]</b> OPERATING PROCEDURE</div>
+    <ol class="ops">
+      <li data-n="01"><b>Isolate first.</b><p>Unknown binary → static triage, hash reputation, detonate in a snapshot-protected VM. Never the host.</p></li>
+      <li data-n="02"><b>One map per boot.</b><p>Kernel work is single-shot with verified teardown. Stacked hook instances is how 4 AM bugchecks happen.</p></li>
+      <li data-n="03"><b>Prove it in the dump.</b><p>No fix ships on theory. Faulting instruction, register state, mechanism — then patch.</p></li>
+      <li data-n="04"><b>Leave no residue.</b><p>PiDDB scrubbed, services removed, files wiped, SSDT restored. Or it didn't happen.</p></li>
+    </ol>
+  </div>
+
+  <hr class="rule">
+  <div id="hex">
+    <div class="hd"><b>[ 04 ]</b> SAMPLE — NPT ZERO PAGE, AS THE GUEST SEES IT</div>
+<pre class="dump"><span class="a">fffff800`66e5a194</span>  <span class="h">48 89 5c 24 20 55 56 57 41 54 41 55 41 56 41 57</span>  H.\$ UWAAATAAVAAW
+<span class="a">fffff800`66e5a1a4</span>  <span class="h">48 8d ac 24 a0 fe ff ff 48 81 ec 60 02 00 00</span>  H..<span class="hl">MiCopyOnWrite+30</span>
+<span class="a">fffff800`66e5a1b4</span>  <span class="h">48 8b 05 2a 38 89 d0 48 33 c4 48 89 85 50 01</span>  H..*.8..H3.H..P.
+<span class="a">fffff800`66e5a1c4</span>  <span class="h">00 00 48 8b 1a 0f 57 c0 33 c0 48 89 4c 24 38</span>  ..H...W.3.H.L$8
+<span class="dim"># 26,214 more pages exactly like this one.Verified clean.</span></pre>
+  </div>
+
+  <hr class="rule">
+  <div id="sh">
+    <div class="hd"><b>[ 05 ]</b> CONTACT — INTERACTIVE SHELL <span style="letter-spacing:0;text-transform:none">(try: help)</span></div>
+    <div id="shell">
+      <div id="shell-out"><div><span style="color:var(--acc)">exauxit@operator:~$</span> shell ready. type <b>help</b>.</div></div>
+      <div id="shell-in-row"><span>$</span><input id="shell-in" autocomplete="off" spellcheck="false" placeholder=""></div>
+    </div>
+  </div>
+
+  <footer>
+    <div>exauxit — operator dossier · single file · no trackers</div>
+    <div>uptime <span id="up">00:00:00</span> · session armed</div>
+  </footer>
+</div>
+
+<script>
+  // clock + uptime
+  const t0 = Date.now();
+  const pad = n => String(n).padStart(2, '0');
+  setInterval(() => {
+    const d = new Date();
+    document.getElementById('clock').textContent =
+      pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    const s = Math.floor((Date.now() - t0) / 1000);
+    document.getElementById('up').textContent =
+      pad(Math.floor(s / 3600)) + ':' + pad(Math.floor(s / 60) % 60) + ':' + pad(s % 60);
+  }, 1000);
+
+  // boot sequence
+  const bootLines = [
+    ['dim', '[  0.000000] pulzar-operator firmware v3.1 — memory map captured, 64MiB reserved'],
+    ['dim', '[  0.004112] NPT online · hypervisor memory presents as zero page · CPUID sanitized'],
+    ['ok',  '[  OK  ] cave mapped @ fffff800`66e5a194 · 8/8 symbols · teardown verified'],
+    ['ok',  '[  OK  ] bridge live — QUERY / READ / WRITE / BATCH OK'],
+    ['',    ''],
+    ['dim', 'last session: 5 bugchecks root-caused · 0 residue · identity rotated'],
+    ['ok',  'operator dossier loaded. clearance: need-to-know.'],
+  ];
+  const boot = document.getElementById('boot');
+  let bi = 0;
+  (function nextBoot() {
+    if (bi >= bootLines.length) {
+      const c = document.createElement('div');
+      c.innerHTML = '<span style="color:var(--acc)">exauxit@operator:~$</span> <span class="cursor"></span>';
+      boot.appendChild(c);
+      return;
+    }
+    const [cls, txt] = bootLines[bi++];
+    const d = document.createElement('div');
+    d.className = 'ln' + (cls ? ' ' + cls : '');
+    d.textContent = txt || ' ';
+    boot.appendChild(d);
+    setTimeout(nextBoot, 160 + Math.random() * 260);
+  })();
+
+  // interactive shell
+  const out = document.getElementById('shell-out');
+  const inp = document.getElementById('shell-in');
+  function print(t, cls) {
+    const d = document.createElement('div');
+    if (cls) d.className = cls;
+    d.textContent = t;
+    out.appendChild(d);
+    out.scrollTop = out.scrollHeight;
+  }
+  const cmds = {
+    help: () => 'commands: whoami · arsenal · method · rates · contact · clear',
+    whoami: () => 'operator "exauxit" — kernel / AC-internals / HWID / hypervisor assessment.\nBelow the API is in scope. Logs, dumps, or hashes — not descriptions.',
+    arsenal: () => 'sorana-spoofer.sys — cave-mapped spoofer (SMBIOS/UEFI/USBSTOR)\nmapper.exe — self-sufficient loader, one-map-per-boot guard\nastrum-bridge — zero-footprint kernel channel (no device/thread/handles)\nr6-tooling — live pattern scanner, per-build AOBs\nforensics-kit — kd automation, trap frames, PTE decode',
+    method: () => '01 isolate (snapshot VM) → 02 single-shot maps → 03 prove it in the dump → 04 zero residue.',
+    rates: () => 'per-project quotes. Crash-debug retainers available. PGP on request.',
+    contact: () => 'DM: ExauXit · UTC-7, late hours. Bring a dump, leave with a root cause.',
+    clear: () => { out.innerHTML = ''; return null; },
+  };
+  inp.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const raw = inp.value.trim();
+    inp.value = '';
+    print('exauxit@operator:~$ ' + raw);
+    if (!raw) return;
+    const fn = cmds[raw.toLowerCase().split(/\s+/)[0]];
+    if (fn) { const r = fn(); if (r) print(r); }
+    else print('command not found: ' + raw + ' — try: help', 'bad');
+  });
+
+  // neural-net + hex enumeration backdrop
+  (function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const cv = document.getElementById('net');
+    const ctx = cv.getContext('2d');
+    const HEX = '0123456789ABCDEF';
+    let W, H, nodes = [];
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    function seed() {
+      const n = Math.min(90, Math.floor(W * H / 22000));
+      nodes = Array.from({ length: n }, () => ({
+        x: rnd(0, W), y: rnd(0, H),
+        vx: rnd(-.28, .28), vy: rnd(-.28, .28),
+        r: rnd(1, 2.1),
+        tag: Math.random() < .3
+          ? '0x' + Array.from({ length: 4 }, () => HEX[Math.random() * 16 | 0]).join('')
+          : null,
+        tw: rnd(0, Math.PI * 2),
+      }));
+    }
+    function size() {
+      W = cv.width = window.innerWidth;
+      H = cv.height = window.innerHeight;
+      seed();
+    }
+    window.addEventListener('resize', size);
+    size();
+    const LINK = 150;
+    function frame() {
+      ctx.clearRect(0, 0, W, H);
+      for (const p of nodes) {
+        p.x += p.vx; p.y += p.vy; p.tw += .02;
+        if (p.x < -20) p.x = W + 20; if (p.x > W + 20) p.x = -20;
+        if (p.y < -20) p.y = H + 20; if (p.y > H + 20) p.y = -20;
+      }
+      ctx.lineWidth = 1;
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const d = Math.hypot(dx, dy);
+          if (d < LINK) {
+            ctx.strokeStyle = 'rgba(255,176,0,' + ((1 - d / LINK) * .28).toFixed(3) + ')';
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+          }
+        }
+      }
+      ctx.font = '10px Consolas,monospace';
+      for (const p of nodes) {
+        const pulse = .45 + .35 * Math.sin(p.tw);
+        ctx.fillStyle = 'rgba(255,176,0,' + pulse.toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+        if (p.tag) {
+          ctx.fillStyle = 'rgba(232,223,200,' + (pulse * .5).toFixed(3) + ')';
+          ctx.fillText(p.tag, p.x + 8, p.y - 8);
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+    frame();
+  })();
+</script>
+</body>
+</html>
